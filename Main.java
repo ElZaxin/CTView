@@ -172,10 +172,15 @@ public class Main extends JFrame {
                  if (event.getSource()==mip_button) {
 						//e.g. do something to change the image here
                         //e.g. call MIP function
-                        image1=MIP(image1); //(although mine is called MIP, it doesn't do MIP)
+                        /*image1=MIP(image1); //(although mine is called MIP, it doesn't do MIP)
         
                         // Update image
                         image_icon1.setIcon(new ImageIcon(image1));
+                 	*/
+                	 image1 = frontView(image1, 60);
+             		 image1 = resizeNearestNeighbour(image1, 256, 256);
+             		//update image
+             		image_icon1.setIcon(new ImageIcon(image1));
                  }
          }
     }
@@ -203,10 +208,13 @@ public class Main extends JFrame {
     	//calculate the colour by performing a mapping from [min,max] -> [0,255]
     	float col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
     	for(int c = 0; c < 3; c++) {
-    		int index = c + 3 * i + 3 * j * width;
+    		int index = c + (3 * i) + (3 * j * width);
     		data[index] = (byte) col;
     	}
     }
+    
+    //*************************************************
+    //View Functions 
     /*
      * Top View Function - 
      * This function displays the image top down, using the z axis
@@ -241,7 +249,8 @@ public class Main extends JFrame {
 				assignColour(data, datum, i, j, width);
     		}
     	}
-    	return image;
+    	
+    	return resizeNearestNeighbour(image, 100, 100);
     	
     }
     /*
@@ -262,8 +271,29 @@ public class Main extends JFrame {
     	}
     	return image;
     }
+    //*********************************************
+    //Image manipulation, resizing and maximum intensity projection
+    //functions
+    public BufferedImage resizeNearestNeighbour(BufferedImage image, int newHeight, int newWidth) {
+       	BufferedImage newImage = new BufferedImage(newWidth, newHeight,BufferedImage.TYPE_BYTE_GRAY);
     	
-
+       	int oldHeight = image.getHeight();
+       	int oldWidth = image.getWidth();
+       	
+    	for(int j = 0; j < newHeight - 1; j++) {
+    		for(int i = 0; i < newWidth - 1; i++) {
+    			for(int c = 0; c < 3; c++) {
+    				int y = j * (oldHeight/newHeight);
+    				int x = i * (oldWidth/newWidth);
+    				newImage.setRGB(i, j, image.getRGB(x, y));
+    			}
+    		}
+    	}
+    	
+    	return newImage;
+    }
+    
+    
     /*
         This function shows how to carry out an operation on an image.
         It obtains the dimensions of the image, and then loops through
