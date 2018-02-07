@@ -172,15 +172,11 @@ public class Main extends JFrame {
                  if (event.getSource()==mip_button) {
 						//e.g. do something to change the image here
                         //e.g. call MIP function
-                        /*image1=MIP(image1); //(although mine is called MIP, it doesn't do MIP)
+                        image1=MIP(image1); //(although mine is called MIP, it doesn't do MIP)
         
                         // Update image
                         image_icon1.setIcon(new ImageIcon(image1));
-                 	*/
-                	 image1 = frontView(image1, 60);
-             		 image1 = resizeNearestNeighbour(image1, 256, 256);
-             		//update image
-             		image_icon1.setIcon(new ImageIcon(image1));
+                 	
                  }
          }
     }
@@ -250,7 +246,7 @@ public class Main extends JFrame {
     		}
     	}
     	
-    	return resizeNearestNeighbour(image, 100, 100);
+    	return image;
     	
     }
     /*
@@ -302,7 +298,8 @@ public class Main extends JFrame {
     */
     public BufferedImage MIP(BufferedImage image) {
             //Get image dimensions, and declare loop variables
-            int w=image.getWidth(), h=image.getHeight(), i, j, c, k;
+            int width =image.getWidth();
+            int height =image.getHeight();
             //Obtain pointer to data for fast processing
             byte[] data = GetImageData(image);
 			float col;
@@ -310,27 +307,54 @@ public class Main extends JFrame {
             //Shows how to loop through each pixel and colour
             //Try to always use j for loops in y, and i for loops in x
             //as this makes the code more readable
-            for (j=0; j<h; j++) {
-                    for (i=0; i<w; i++) {
-							//at this point (i,j) is a single pixel in the image
-							//here you would need to do something to (i,j) if the image size
-							//does not match the slice size (e.g. during an image resizing operation
-							//If you don't do this, your j,i could be outside the array bounds
-							//In the framework, the image is 256x256 and the data set slices are 256x256
-							//so I don't do anything - this also leaves you something to do for the assignment
-							datum=cthead[76][j][i]; //get values from slice 76 (change this in your assignment)
-							//calculate the colour by performing a mapping from [min,max] -> [0,255]
-							col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
-                            for (c=0; c<3; c++) {
-								//and now we are looping through the bgr components of the pixel
-								//set the colour component c of pixel (i,j)
-								data[c+3*i+3*j*w]=(byte) col;
-                            } // colour loop
+            for (int j=0; j < height; j++) {
+                    for (int i=0; i < width; i++) {
+						short maximum = 0;
+						for(int k = 0; k < 113; k++) {//loop through every z value, and find the highest intensitity
+							if(cthead[k][j][i] > maximum) {
+								maximum = cthead[k][j][i];
+							}
+						}
+						datum = maximum;
+                    	assignColour(data, datum, i, j, width);
                     } // column loop
             } // row loop
 
             return image;
     }
+    /*
+    This function shows how to carry out an operation on an image.
+    It obtains the dimensions of the image, and then loops through
+    the image carrying out the copying of a slice of data into the
+	image.
+*/
+public BufferedImage MIPSide(BufferedImage image) {
+        //Get image dimensions, and declare loop variables
+        int width =image.getWidth();
+        int height =image.getHeight();
+        //Obtain pointer to data for fast processing
+        byte[] data = GetImageData(image);
+		float col;
+		short datum;
+        //Shows how to loop through each pixel and colour
+        //Try to always use j for loops in y, and i for loops in x
+        //as this makes the code more readable
+        for (int k = 0; k < 113; k++) {
+                for (int j=0; j < height; j++) {
+					short maximum = 0;
+					for(int i=0; i < height; i++) {//loop through every z value, and find the highest intensitity
+						if(cthead[k][j][i] > maximum) {
+							maximum = cthead[k][j][i];
+						}
+					}
+					datum = maximum;
+                	assignColour(data, datum, j, k, width);
+                } // column loop
+        } // row loop
+
+        return image;
+}
+
 
     public static void main(String[] args) throws IOException {
  
