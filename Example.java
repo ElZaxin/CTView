@@ -96,6 +96,7 @@ public class Example extends JFrame {
         // associate appropriate handlers
         mip_button.addActionListener(handler);
 		yslice_slider.addChangeListener(handler);
+        zslice_slider.addChangeListener(handler);
         
         // ... and display everything
         pack();
@@ -110,9 +111,10 @@ public class Example extends JFrame {
 	
 		//Change handler (e.g. for sliders)
          public void stateChanged(ChangeEvent e) {
-			System.out.println(yslice_slider.getValue());
+			System.out.println(zslice_slider.getValue());
 			//e.g. do something to change the image here
-        
+			image1=MIP(image1, zslice_slider.getValue()); //(although mine is called MIP, it doesn't do MIP)
+	        
             // Update image
             image_icon1.setIcon(new ImageIcon(image1));
 		}
@@ -122,7 +124,7 @@ public class Example extends JFrame {
                  if (event.getSource()==mip_button) {
 						//e.g. do something to change the image here
                         //e.g. call MIP function
-                        image1=MIP(image1); //(although mine is called MIP, it doesn't do MIP)
+                        image1=MIP(image1, zslice_slider.getValue()); //(although mine is called MIP, it doesn't do MIP)
         
                         // Update image
                         image_icon1.setIcon(new ImageIcon(image1));
@@ -152,7 +154,7 @@ public class Example extends JFrame {
         the image carrying out the copying of a slice of data into the
 		image.
     */
-    public BufferedImage MIP(BufferedImage image) {
+    public BufferedImage MIP(BufferedImage image, int slice) {
             //Get image dimensions, and declare loop variables
             int w=image.getWidth(), h=image.getHeight(), i, j, c, k;
             //Obtain pointer to data for fast processing
@@ -170,7 +172,7 @@ public class Example extends JFrame {
 							//If you don't do this, your j,i could be outside the array bounds
 							//In the framework, the image is 256x256 and the data set slices are 256x256
 							//so I don't do anything - this also leaves you something to do for the assignment
-							datum=cthead[76][j][i]; //get values from slice 76 (change this in your assignment)
+							datum=cthead[slice][j][i]; //get values from slice 76 (change this in your assignment)
 							//calculate the colour by performing a mapping from [min,max] -> [0,255]
 							col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
                             for (c=0; c<3; c++) {
