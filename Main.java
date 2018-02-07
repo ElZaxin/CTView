@@ -10,20 +10,21 @@ import javax.swing.event.*;
 // a volume data class?
 // I won't give extra marks for that though.
 
-public class Example extends JFrame {
+public class Main extends JFrame {
 
     JButton mip_button; //an example button to switch to MIP mode
     JLabel image_icon1; //using JLabel to display an image (check online documentation)
     JLabel image_icon2; //using JLabel to display an image (check online documentation)
 	JSlider zslice_slider, yslice_slider; //sliders to step through the slices (z and y directions) (remember 113 slices in z direction 0-112)
-    BufferedImage image1, image2; //storing the image in memory
+    JSlider xslice_slider;
+	BufferedImage image1, image2; //storing the image in memory
 	short cthead[][][]; //store the 3D volume data set
 	short min, max; //min/max value in the 3D volume data set
 
     /*
         This function sets up the GUI and reads the data set
     */
-    public void Example() throws IOException {
+    public void start() throws IOException {
         //File name is hardcoded here - much nicer to have a dialog to select it and capture the size from the user
 		File file = new File("CThead");
         
@@ -76,9 +77,21 @@ public class Example extends JFrame {
         mip_button = new JButton("MIP");
         container.add(mip_button);
 		
+        
+        //label
+        JLabel zLabel = new JLabel("Z Axis");
+        container.add(zLabel);
 		//Zslice slider
 		zslice_slider = new JSlider(0,112);
 		container.add(zslice_slider);
+		zslice_slider.setMajorTickSpacing(20);
+		zslice_slider.setMinorTickSpacing(5);
+		zslice_slider.setPaintTicks(true);
+		zslice_slider.setPaintLabels(true);
+		
+		//label
+        JLabel yLabel = new JLabel("Y Axis");
+        container.add(yLabel);
 		yslice_slider = new JSlider(0,255);
 		container.add(yslice_slider);
 		//Add labels (y slider as example)
@@ -86,6 +99,18 @@ public class Example extends JFrame {
 		yslice_slider.setMinorTickSpacing(10);
 		yslice_slider.setPaintTicks(true);
 		yslice_slider.setPaintLabels(true);
+		
+		//label
+        JLabel xLabel = new JLabel("X Axis");
+        container.add(xLabel);
+		//xslice slider
+		xslice_slider = new JSlider(0, 255);
+		container.add(xslice_slider);
+		xslice_slider.setMajorTickSpacing(50);
+		xslice_slider.setMinorTickSpacing(10);
+		xslice_slider.setPaintTicks(true);
+		xslice_slider.setPaintLabels(true);
+		
 		//see
 		//https://docs.oracle.com/javase/7/docs/api/javax/swing/JSlider.html
 		//for documentation (e.g. how to get the value, how to display vertically if you want)
@@ -97,6 +122,7 @@ public class Example extends JFrame {
         mip_button.addActionListener(handler);
 		yslice_slider.addChangeListener(handler);
         zslice_slider.addChangeListener(handler);
+        xslice_slider.addChangeListener(handler);
         
         // ... and display everything
         pack();
@@ -111,12 +137,34 @@ public class Example extends JFrame {
 	
 		//Change handler (e.g. for sliders)
          public void stateChanged(ChangeEvent e) {
-			System.out.println(zslice_slider.getValue());
-			//e.g. do something to change the image here
-			image1=MIP(image1, zslice_slider.getValue()); //(although mine is called MIP, it doesn't do MIP)
+        	Object a = e.getSource();
+        	//z axis, top down view
+        	if(a == zslice_slider) {
+				//viewing it from top down
+				image1= topView(image1, zslice_slider.getValue()); //(although mine is called MIP, it doesn't do MIP)
 	        
-            // Update image
-            image_icon1.setIcon(new ImageIcon(image1));
+            	// Update image
+            	image_icon1.setIcon(new ImageIcon(image1));
+            }
+        	
+        	//y axis, front view
+        	if(a == yslice_slider) {
+        		image1 = frontView(image1, yslice_slider.getValue());
+        		
+        		//update image
+        		image_icon1.setIcon(new ImageIcon(image1));
+        		
+        	}
+        	
+        	//x axis, side view
+        	if(a == xslice_slider) {
+        		System.out.println("x");
+        		image1 = sideView(image1, xslice_slider.getValue());
+        		
+        		//update image
+        		image_icon1.setIcon(new ImageIcon(image1));
+        		
+        	}
 		}
 		
 		//action handlers (e.g. for buttons)
@@ -124,7 +172,7 @@ public class Example extends JFrame {
                  if (event.getSource()==mip_button) {
 						//e.g. do something to change the image here
                         //e.g. call MIP function
-                        image1=MIP(image1, zslice_slider.getValue()); //(although mine is called MIP, it doesn't do MIP)
+                        image1=MIP(image1); //(although mine is called MIP, it doesn't do MIP)
         
                         // Update image
                         image_icon1.setIcon(new ImageIcon(image1));
@@ -147,6 +195,74 @@ public class Example extends JFrame {
           
             return ((DataBufferByte) DB).getData();
     }
+    /*
+     * Gets the colour a pixel should be given the data array of bytes
+     * of the image
+     */
+    public void assignColour(byte[] data, short datum, int i, int j, int width) {
+    	//calculate the colour by performing a mapping from [min,max] -> [0,255]
+    	float col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
+    	for(int c = 0; c < 3; c++) {
+    		int index = c + 3 * i + 3 * j * width;
+    		data[index] = (byte) col;
+    	}
+    }
+    /*
+     * Top View Function - 
+     * This function displays the image top down, using the z axis
+     */
+    public BufferedImage topView(BufferedImage image, int zslice) {
+    	int width = image.getWidth();
+    	int height = image.getHeight();
+    	byte[] data = GetImageData(image);
+    	
+    	for(int j = 0; j < height; j++) {
+    		for(int i = 0; i < width; i++) {
+    			short datum = cthead[zslice][j][i];
+    			
+				assignColour(data, datum, i, j, width);
+    		}
+    	}
+    	return image;
+    	
+    }
+    /*
+     * Front View Function - 
+     * using the y axis
+     */
+    public BufferedImage frontView(BufferedImage image, int yslice) {
+    	int width = image.getWidth();
+    	byte[] data = GetImageData(image);
+    	
+    	for(int j = 0; j < 113; j++) {
+    		for(int i = 0; i < width; i++) {
+    			short datum = cthead[j][yslice][i];
+    			
+				assignColour(data, datum, i, j, width);
+    		}
+    	}
+    	return image;
+    	
+    }
+    /*
+     * Side View Function - 
+     * using the x axis
+     */
+    public BufferedImage sideView(BufferedImage image, int xslice) {
+    	int width = image.getWidth();
+    	int height = image.getHeight();
+    	byte[] data = GetImageData(image);
+    	
+    	for(int j = 0; j < height; j++) {
+    		for(int i = 0; i < 113; i++) {
+    			short datum = cthead[i][j][xslice];
+    			
+				assignColour(data, datum, i, j, width);
+    		}
+    	}
+    	return image;
+    }
+    	
 
     /*
         This function shows how to carry out an operation on an image.
@@ -154,7 +270,7 @@ public class Example extends JFrame {
         the image carrying out the copying of a slice of data into the
 		image.
     */
-    public BufferedImage MIP(BufferedImage image, int slice) {
+    public BufferedImage MIP(BufferedImage image) {
             //Get image dimensions, and declare loop variables
             int w=image.getWidth(), h=image.getHeight(), i, j, c, k;
             //Obtain pointer to data for fast processing
@@ -172,7 +288,7 @@ public class Example extends JFrame {
 							//If you don't do this, your j,i could be outside the array bounds
 							//In the framework, the image is 256x256 and the data set slices are 256x256
 							//so I don't do anything - this also leaves you something to do for the assignment
-							datum=cthead[slice][j][i]; //get values from slice 76 (change this in your assignment)
+							datum=cthead[76][j][i]; //get values from slice 76 (change this in your assignment)
 							//calculate the colour by performing a mapping from [min,max] -> [0,255]
 							col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
                             for (c=0; c<3; c++) {
@@ -188,8 +304,8 @@ public class Example extends JFrame {
 
     public static void main(String[] args) throws IOException {
  
-       Example e = new Example();
+       Main e = new Main();
        e.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-       e.Example();
+       e.start();
     }
 }
