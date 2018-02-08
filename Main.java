@@ -11,7 +11,14 @@ import javax.swing.event.*;
 // I won't give extra marks for that though.
 
 public class Main extends JFrame {
-
+	final static int X_MAX = 256; //constants for the maximum x y and z of the data
+	final static int Y_MAX = 256;
+	final static int Z_MAX = 113;
+	String state = ""; //the state, either side view front view top	view or rotating
+	//TV - top view
+	//SV - side view
+	//FV - front view
+	
     JButton mip_button; //an example button to switch to MIP mode
     JLabel image_icon1; //using JLabel to display an image (check online documentation)
     JLabel image_icon2; //using JLabel to display an image (check online documentation)
@@ -20,7 +27,7 @@ public class Main extends JFrame {
 	BufferedImage image1, image2; //storing the image in memory
 	short cthead[][][]; //store the 3D volume data set
 	short min, max; //min/max value in the 3D volume data set
-
+	
     /*
         This function sets up the GUI and reads the data set
     */
@@ -140,15 +147,18 @@ public class Main extends JFrame {
         	Object a = e.getSource();
         	//z axis, top down view
         	if(a == zslice_slider) {
+				//update the state
+				state = "TV";
 				//viewing it from top down
 				image1= topView(image1, zslice_slider.getValue()); //(although mine is called MIP, it doesn't do MIP)
-	        
+				
             	// Update image
             	image_icon1.setIcon(new ImageIcon(image1));
             }
         	
         	//y axis, front view
         	if(a == yslice_slider) {
+				state = "FV";
         		image1 = frontView(image1, yslice_slider.getValue());
         		
         		//update image
@@ -158,7 +168,7 @@ public class Main extends JFrame {
         	
         	//x axis, side view
         	if(a == xslice_slider) {
-        		System.out.println("x");
+				state = "SV";
         		image1 = sideView(image1, xslice_slider.getValue());
         		
         		//update image
@@ -170,11 +180,8 @@ public class Main extends JFrame {
 		//action handlers (e.g. for buttons)
          public void actionPerformed(ActionEvent event) {
                  if (event.getSource()==mip_button) {
-						//e.g. do something to change the image here
-                        //e.g. call MIP function
-                        image1=MIP(image1); //(although mine is called MIP, it doesn't do MIP)
-        
-                        // Update image
+                        image1=MIP(image1); 
+						
                         image_icon1.setIcon(new ImageIcon(image1));
                  	
                  }
@@ -205,7 +212,7 @@ public class Main extends JFrame {
     	float col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
     	for(int c = 0; c < 3; c++) {
     		int index = c + (3 * i) + (3 * j * width);
-    		data[index] = (byte) col;
+			data[index] = (byte) col;
     	}
     }
     
@@ -216,18 +223,17 @@ public class Main extends JFrame {
      * This function displays the image top down, using the z axis
      */
     public BufferedImage topView(BufferedImage image, int zslice) {
-    	int width = image.getWidth();
-    	int height = image.getHeight();
-    	byte[] data = GetImageData(image);
-    	
-    	for(int j = 0; j < height; j++) {
-    		for(int i = 0; i < width; i++) {
-    			short datum = cthead[zslice][j][i];
+    	BufferedImage newImage = new BufferedImage(X_MAX, Y_MAX, BufferedImage.TYPE_3BYTE_BGR);
+		int width = newImage.getWidth();
+    	byte[] data = GetImageData(newImage);
+    	for(int j = 0; j < Y_MAX; j++) {
+    		for(int i = 0; i < X_MAX; i++) {
+    			short datum = cthead[zslice][i][j];
     			
 				assignColour(data, datum, i, j, width);
     		}
     	}
-    	return image;
+    	return newImage;
     	
     }
     /*
@@ -235,18 +241,17 @@ public class Main extends JFrame {
      * using the y axis
      */
     public BufferedImage frontView(BufferedImage image, int yslice) {
-    	int width = image.getWidth();
-    	byte[] data = GetImageData(image);
-    	
-    	for(int j = 0; j < 113; j++) {
-    		for(int i = 0; i < width; i++) {
-    			short datum = cthead[j][yslice][i];
-    			
-				assignColour(data, datum, i, j, width);
+    	BufferedImage newImage = new BufferedImage(Y_MAX, Z_MAX, BufferedImage.TYPE_3BYTE_BGR);
+		int width = newImage.getWidth();
+    	byte[] data = GetImageData(newImage);
+    	for(int k = 0; k < Z_MAX; k++) {
+    		for(int j = 0; j < Y_MAX; j++) {
+    			short datum = cthead[k][yslice][j];
+    			assignColour(data, datum, j, k, width);
     		}
     	}
     	
-    	return image;
+    	return resizeNearestNeighbour(newImage, 256, 256);
     	
     }
     /*
@@ -254,105 +259,131 @@ public class Main extends JFrame {
      * using the x axis
      */
     public BufferedImage sideView(BufferedImage image, int xslice) {
-    	int width = image.getWidth();
-    	int height = image.getHeight();
-    	byte[] data = GetImageData(image);
-    	
-    	for(int j = 0; j < height; j++) {
-    		for(int i = 0; i < 113; i++) {
-    			short datum = cthead[i][j][xslice];
-    			
-				assignColour(data, datum, i, j, width);
+    	BufferedImage newImage = new BufferedImage(X_MAX, Z_MAX, BufferedImage.TYPE_3BYTE_BGR);
+		int width = newImage.getWidth();
+    	byte[] data = GetImageData(newImage);
+    	for(int i = 0; i < X_MAX; i++) {
+    		for(int k = 0; k < Z_MAX; k++) {
+    			short datum = cthead[k][i][xslice];
+				assignColour(data, datum, i, k, width);
     		}
     	}
-    	return image;
+    	return resizeNearestNeighbour(newImage, 256, 256);
     }
     //*********************************************
     //Image manipulation, resizing and maximum intensity projection
     //functions
-    public BufferedImage resizeNearestNeighbour(BufferedImage image, int newHeight, int newWidth) {
-       	BufferedImage newImage = new BufferedImage(newWidth, newHeight,BufferedImage.TYPE_BYTE_GRAY);
+    public BufferedImage resizeNearestNeighbour(BufferedImage image, float newHeight, float newWidth) {
+       	BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight,BufferedImage.TYPE_3BYTE_BGR);
     	
-       	int oldHeight = image.getHeight();
-       	int oldWidth = image.getWidth();
-       	
-    	for(int j = 0; j < newHeight - 1; j++) {
-    		for(int i = 0; i < newWidth - 1; i++) {
-    			for(int c = 0; c < 3; c++) {
-    				int y = j * (oldHeight/newHeight);
-    				int x = i * (oldWidth/newWidth);
-    				newImage.setRGB(i, j, image.getRGB(x, y));
-    			}
-    		}
+       	float oldHeight = image.getHeight();
+       	float oldWidth = image.getWidth();
+    	for(int j = 0; j < newHeight; j++) {
+    		for(int i = 0; i < newHeight; i++) {
+    				float y = j * (oldHeight/newHeight);
+    				float x = i * (oldWidth/newWidth);
+					
+    				newImage.setRGB(i, j, image.getRGB((int) x, (int) y));
+					
+			}
     	}
-    	
     	return newImage;
     }
     
     
-    /*
-        This function shows how to carry out an operation on an image.
-        It obtains the dimensions of the image, and then loops through
-        the image carrying out the copying of a slice of data into the
-		image.
-    */
-    public BufferedImage MIP(BufferedImage image) {
-            //Get image dimensions, and declare loop variables
-            int width =image.getWidth();
-            int height =image.getHeight();
-            //Obtain pointer to data for fast processing
-            byte[] data = GetImageData(image);
-			float col;
-			short datum;
-            //Shows how to loop through each pixel and colour
-            //Try to always use j for loops in y, and i for loops in x
-            //as this makes the code more readable
-            for (int j=0; j < height; j++) {
-                    for (int i=0; i < width; i++) {
-						short maximum = 0;
-						for(int k = 0; k < 113; k++) {//loop through every z value, and find the highest intensitity
-							if(cthead[k][j][i] > maximum) {
-								maximum = cthead[k][j][i];
-							}
-						}
-						datum = maximum;
-                    	assignColour(data, datum, i, j, width);
-                    } // column loop
-            } // row loop
-
-            return image;
-    }
     /*
     This function shows how to carry out an operation on an image.
     It obtains the dimensions of the image, and then loops through
     the image carrying out the copying of a slice of data into the
 	image.
 */
-public BufferedImage MIPSide(BufferedImage image) {
+public BufferedImage MIP(BufferedImage image) {
+		
+		short datum, maximum;
+		//make the variables used in the for loops so they can be changed depending on what view
+		//the user is on
+		int i,j,k;
+		 int width = image.getWidth();
+		BufferedImage newImage = null;
+		switch(state) {
+			//top view case
+			case "TV": 
+				newImage = new BufferedImage(256, 256, BufferedImage.TYPE_3BYTE_BGR);
         //Get image dimensions, and declare loop variables
-        int width =image.getWidth();
-        int height =image.getHeight();
+       
         //Obtain pointer to data for fast processing
-        byte[] data = GetImageData(image);
-		float col;
-		short datum;
-        //Shows how to loop through each pixel and colour
-        //Try to always use j for loops in y, and i for loops in x
-        //as this makes the code more readable
-        for (int k = 0; k < 113; k++) {
-                for (int j=0; j < height; j++) {
-					short maximum = 0;
-					for(int i=0; i < height; i++) {//loop through every z value, and find the highest intensitity
-						if(cthead[k][j][i] > maximum) {
-							maximum = cthead[k][j][i];
+        byte[] data = GetImageData(newImage);
+
+				for (i = 0; i < X_MAX; i++) {
+					for (j=0; j < Y_MAX; j++) {
+						maximum = 0;
+						for(k=0; k < Z_MAX; k++) {//loop through every z value, and find the highest intensitity
+							short temp = cthead[k][i][j];
+							if(temp > maximum) {
+							maximum = temp;
 						}
 					}
 					datum = maximum;
-                	assignColour(data, datum, j, k, width);
-                } // column loop
-        } // row loop
+                	assignColour(data, datum, i, j, width);
+					} // column loop
+			} // row loop
+			break;
+				
+			case "FV":
+				 newImage = new BufferedImage(256, 113, BufferedImage.TYPE_3BYTE_BGR);
+        //Get image dimensions, and declare loop variables
+         width = newImage.getWidth();
+        //Obtain pointer to data for fast processing
+         data = GetImageData(newImage);
 
-        return image;
+		//make the variables used in the for loops so they can be changed depending on what view
+		//the user is on
+
+				for (i = 0; i < Y_MAX; i++) {
+					for (k=0; k < Z_MAX; k++) {
+						maximum = 0;
+						for(j=0; j < X_MAX; j++) {//loop through every z value, and find the highest intensitity
+							short temp = cthead[k][j][i];
+							if(temp > maximum) {
+								maximum = temp;
+							}
+						}
+						datum = maximum;
+						assignColour(data, datum, i, k, width);
+					} // column loop
+			} // row loop
+			break;
+				
+			case "SV":
+			 newImage = new BufferedImage(256, 113, BufferedImage.TYPE_3BYTE_BGR);
+        //Get image dimensions, and declare loop variables
+         width = newImage.getWidth();
+        //Obtain pointer to data for fast processing
+        data = GetImageData(newImage);
+
+		//make the variables used in the for loops so they can be changed depending on what view
+		//the user is on
+
+				for (i = 0; i < X_MAX; i++) {
+					for (k=0; k < Z_MAX; k++) {
+						maximum = 0;
+						for(j=0; j < Y_MAX; j++) {//loop through every z value, and find the highest intensitity
+							short temp = cthead[k][i][j];
+							if(temp > maximum) {
+								maximum = temp;
+							}
+						}
+						datum = maximum;
+						assignColour(data, datum, i, k, width);
+					} // column loop
+			} // row loop
+			break;
+		}
+		
+		
+        
+
+        return resizeNearestNeighbour(newImage, 256, 256);
 }
 
 
