@@ -14,7 +14,7 @@ public class Main extends JFrame {
 	final static int X_MAX = 256; //constants for the maximum x y and z of the data
 	final static int Y_MAX = 256;
 	final static int Z_MAX = 113;
-	String state = ""; //the state, either side view front view top	view or rotating
+	String state = "FV"; //the state, either side view front view top	view or rotating
 	//TV - top view
 	//SV - side view
 	//FV - front view
@@ -77,7 +77,8 @@ public class Main extends JFrame {
         // Then our image (as a label icon)
         image_icon1=new JLabel(new ImageIcon(image1));
         container.add(image_icon1);
-        image_icon2=new JLabel(new ImageIcon(image2));
+		
+		image_icon2 = new JLabel(new ImageIcon(image2));
         container.add(image_icon2);
  
         // Then the invert button
@@ -135,6 +136,7 @@ public class Main extends JFrame {
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
+
     }
     
     /*
@@ -180,9 +182,9 @@ public class Main extends JFrame {
 		//action handlers (e.g. for buttons)
          public void actionPerformed(ActionEvent event) {
                  if (event.getSource()==mip_button) {
-                        image1=MIP(image1); 
+                        image2=MIP(image2); 
 						
-                        image_icon1.setIcon(new ImageIcon(image1));
+                        image_icon2.setIcon(new ImageIcon(image2));
                  	
                  }
          }
@@ -273,13 +275,15 @@ public class Main extends JFrame {
     //*********************************************
     //Image manipulation, resizing and maximum intensity projection
     //functions
+	//resizing functions
+	//nearest neighbour resizing
     public BufferedImage resizeNearestNeighbour(BufferedImage image, float newHeight, float newWidth) {
        	BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight,BufferedImage.TYPE_3BYTE_BGR);
     	
        	float oldHeight = image.getHeight();
        	float oldWidth = image.getWidth();
     	for(int j = 0; j < newHeight; j++) {
-    		for(int i = 0; i < newHeight; i++) {
+    		for(int i = 0; i < newWidth; i++) {
     				float y = j * (oldHeight/newHeight);
     				float x = i * (oldWidth/newWidth);
 					
@@ -290,6 +294,28 @@ public class Main extends JFrame {
     	return newImage;
     }
     
+	//bilinear interpolation resizing
+	public BufferedImage resizeInterPolation(BufferedImage image, float newHeight, float newWidth) {
+		BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight, BufferedImage.TYPE_3BYTE_BGR);
+		
+		float oldHeight = image.getHeight();
+		float oldWidth = image.getWidth();
+		for(int j = 0; j < newHeight; j++) {
+			for(int i = 0; i < newWidth; i++) {
+				//new rgb 
+				float r;
+				float g;
+				float b;
+				
+				//x and y values from previous image
+				float y;
+				float x;
+				
+			}
+		}
+		return null;
+		
+	}
     
     /*
     This function shows how to carry out an operation on an image.
