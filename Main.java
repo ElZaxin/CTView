@@ -185,7 +185,7 @@ public class Main extends JFrame {
                         image2=MIP(image2); 
 						
                         image_icon2.setIcon(new ImageIcon(image2));
-                 	
+						histogramEqualisationData();
                  }
          }
     }
@@ -411,7 +411,26 @@ public BufferedImage MIP(BufferedImage image) {
 
         return resizeNearestNeighbour(newImage, 256, 256);
 }
+	/**
+	* histogram equalisation
+	*/
+	public void histogramEqualisationData() {
+		int[] histogram;
+		histogram = new int[3366];
+		System.out.println(min);
+		
+		for(int z = 0; z < 113; z++) {
+			for(int y = 0; y < 256; y++) {
+				for(int x = 0; x < 256; x++) {
+					int index = cthead[z][y][x] - min;
+					histogram[index]++;
+					
+				}
+			}
+		}
 
+		
+	}
 
     public static void main(String[] args) throws IOException {
  
