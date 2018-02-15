@@ -76,6 +76,27 @@ private class GUIEventHandler implements ActionListener {
     	}
     	return newImage;
     }
+	
+	/**
+	* bilinear interpolation equations, on the y axis
+	* V = V1 + (V2 - V1) * ((y - y1) / (y2 - y1))
+	*
+	*On the x axis
+	* V = V1 + (V2 - V1) * ((x - x1) / (x2 - x1))
+	* 
+	* where 
+	* V1 			V			V2
+	* (x1, y1) 		(x,y)		(x2,y2)
+	
+	* ( -65282) * (1/2) 
+	* -810380
+	*/
+	double bilinearXAxis(double x, double y, double v1, double x1, double y1, double v2, double x2, double y2) {
+		return v1 + (v2 - v1) * ((x - x1) / (x2 - x1));
+	}
+	double bilinearYAxis(double x, double y, double v1, double x1, double y1, double v2, double x2, double y2) {
+		return v1 + (v2 - v1) * ((y - y1) / (y2 - y1));
+	}
 	 public BufferedImage bilinearInterpolation(BufferedImage image, float newHeight, float newWidth) {
        	BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight,BufferedImage.TYPE_3BYTE_BGR);
     	
@@ -86,8 +107,8 @@ private class GUIEventHandler implements ActionListener {
 		float xRatio = (newWidth/oldWidth);
 		//pixels between each origin point = ratio
 		
-    	for(int j = 0; j < oldHeight; j++) {
-    		for(int i = 0; i < oldWidth; i++) {
+    	for(int j = 0; j < oldHeight - 1; j++) {
+    		for(int i = 0; i < oldWidth - 1; i++) {
 					
     				int y = (int) (j * yRatio);
     				int x = (int) (i * xRatio);
@@ -97,19 +118,69 @@ private class GUIEventHandler implements ActionListener {
 					
     				newImage.setRGB(x, y, c1);
 					
-					//find uncoloured x coordinate
-					for(int k = 1; k < xRatio; k++) {
-						//find the gradient 
-						
-						newImage.setRGB(x + k, y, image.getRGB(i, j));
-					}
-					
-					//find uncoloured y coordinate
-					
-					
+								
 					
 			}
     	}
+		for(int j = 0; j < newImage.getHeight() - 1; j++) {
+			for(int i = 0; i < newImage.getWidth() - 1; i++) {
+				if(newImage.getRGB(i, j) == -16777216) {
+					double v = 0; //colour to find
+					double xf = i; //x value of colour to find
+					double yf = j; //y because same y value
+						
+					//point to the left, ie, point 1
+					double x1 = i - 1;
+					double y1 = j;
+					double v1 = 0;
+					if(i != 0) {
+					v1 = newImage.getRGB(i - 1, j);
+					}
+						
+					//point to the right, ie, point 2
+					double x2 = i + 1;
+					double y2 = j;
+					double v2 = newImage.getRGB(i + 1, j); //find the value of the original image where the colour will be
+						
+					v = bilinearXAxis(xf, yf, v1, x1, y1, v2, x2, y2);
+					newImage.setRGB((int) xf, (int) yf, (int) v);
+					
+				}
+				/*
+					//find uncoloured x coordinate
+					for(int k = 1; k < xRatio; k++) {
+
+						//find the colour along x axis where  
+						//origin point, point to find
+						
+					}
+					
+					//find uncoloured y coordinate
+					//find uncoloured x coordinate
+					for(int l = 1; l < yRatio; l++) {
+
+						//find the colour along x axis where  
+						//origin point, point to find
+						double v = 0; //colour to find
+						double xf = x; //x value of colour to find
+						double yf = y + l; //y because same y value
+						
+						//point to the left, ie, point 1
+						double x1 = x;
+						double y1 = y;
+						double v1 = c1;
+						
+						//point to the right, ie, point 2
+						double x2 = x;
+						double y2 = y + yRatio;
+						double v2 = image.getRGB(i, j + 1); //find the value of the original image where the colour will be
+						
+						v = bilinearYAxis(xf, yf, v1, x1, y1, v2, x2, y2);
+						newImage.setRGB((int) xf, (int) yf, (int) v);
+					}*/
+			}
+			
+		}
 		
 		//find the points inbetween
 		
