@@ -211,10 +211,10 @@ public class Main extends JFrame {
      */
     public void assignColour(byte[] data, short datum, int i, int j, int width) {
     	//calculate the colour by performing a mapping from [min,max] -> [0,255]
-    	float col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
+    	//float col=(255.0f*((float)datum-(float)min)/((float)(max-min)));
     	for(int c = 0; c < 3; c++) {
     		int index = c + (3 * i) + (3 * j * width);
-			data[index] = (byte) col;
+			data[index] = (byte) datum;
     	}
     }
     
@@ -410,15 +410,16 @@ public BufferedImage MIP(BufferedImage image) {
         
 
         return resizeNearestNeighbour(newImage, 256, 256);
-}
+}	
+
 	/**
 	* histogram equalisation
 	*/
-	public void histogramEqualisationData() {
-		int[] histogram;
-		histogram = new int[3366];
+	public void histogramEqualisationData2() {
+		/*(int histogramSize = max - min + 1;
+		histogram = new int[histogramSize];
 		System.out.println(min);
-		
+		//create the histogram, every value of cthead
 		for(int z = 0; z < 113; z++) {
 			for(int y = 0; y < 256; y++) {
 				for(int x = 0; x < 256; x++) {
@@ -428,7 +429,57 @@ public BufferedImage MIP(BufferedImage image) {
 				}
 			}
 		}
-
+		for(int i = 0; i < histogramSize; i++) {
+			t[i] = t[i] + histogram[i];
+			mapping[i] = 255.0f * (t[i] / histogramSize);
+		}*/
+	}
+	public void histogramEqualisationData() {
+		int[] histogram;
+		//size is max - min values, how many different values are in 
+		//cthead, for each value, the index it finds, it adds one to that data index
+		double histogramSize = max - min + 1;
+		histogram = new int[(int) histogramSize];
+		//create the histogram, every value of cthead
+		for(int z = 0; z < 113; z++) {
+			for(int y = 0; y < 256; y++) {
+				for(int x = 0; x < 256; x++) {
+					int index = cthead[z][y][x] - min;
+					histogram[index]++;
+					
+				}
+			}
+		}
+		
+		//create the cumulative distribution function t, ie, the cumulative distribution based
+		//on the histogram of dat 
+		double[] t = new double[histogram.length];
+		int totalSize = 7405568;
+		//sets first to the first element in the histogram to avoid negative array indexes
+		t[0] = histogram[0];
+		for(int i = 1; i < histogram.length; i++) {
+			t[i] = t[i - 1] + histogram[i];
+		}
+		
+		//create the mapping, map the elements of the data set to a new range
+		//map the data elements to the histogram curve * 255, the cumulative distribution
+		//curve / size, to make 0 to 1, over 255, to make it a colour value
+		double[] mapping = new double[histogram.length];
+		for(int i = 0; i < histogram.length; i++) {
+			mapping[i] = 255 * (t[i] / totalSize);
+		}
+		
+		for(int z = 0; z < 113; z++) {
+			for(int y = 0; y < 256; y++) {
+				for(int x = 0; x < 256; x++) {
+					short data = cthead[z][y][x];
+					cthead[z][y][x] = (short) mapping[data - min];
+					
+					
+				}
+			}
+		}
+		
 		
 	}
 
