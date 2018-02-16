@@ -55,7 +55,7 @@ public class MainT extends JFrame {
 private class GUIEventHandler implements ActionListener {
 
     public void actionPerformed(ActionEvent event) {
-          image1 = bilinearInterpolation(image1, image.getHeight() * 1, image.getWidth() * 1);
+          image1 = bilinearInterpolation(image1, image.getHeight() * 3, image.getWidth() * 3);
           image.setIcon(new ImageIcon(image1));
     }
 	//nearest neighbour resizing
@@ -126,41 +126,45 @@ private class GUIEventHandler implements ActionListener {
     				int x = (int) (i * xRatio);
 					
 					int c1 = image.getRGB(i, j);
-					
-					
-    				
-					byte[] a = intToByte(c1);
-					int c2 = -1;
-					for(int k = 0; k < a.length; k++) {
+					//calculate other pixels to assign to thing
+					for(int i = 0; i < (int) xRatio / 2; i++) {
+						byte[] originalColour = intToByte(image.getRGB(i, j));
+						byte[] point1Colour = intToByte(image.getRGB(i - 1, j));
+						byte[] point2Colour = intToByte(image.getRGB(i + 1, j));
 						
 					}
-					newImage.setRGB(x, y, byteToInt(a));
+					for(int i = 0; i < (int) yRatio / 2; i++) {
+						
+					}
+					
+					
+					//assign origin pixel to new image
+					newImage.setRGB(x, y, c1);
 								
 					
 			}
-    	}/*
-		for(int j = 0; j < newImage.getHeight() - 1; j++) {
-			for(int i = 0; i < newImage.getWidth() - 1; i++) {
+    	}
+		//loop through every origin pixel, 
+		for(int j = 1; j < newImage.getHeight() - 1; j++) {
+			for(int i = 1; i < newImage.getWidth() - 1; i++) {
 				if(newImage.getRGB(i, j) == -16777216) {
-					double v = 0; //colour to find
-					double xf = i; //x value of colour to find
-					double yf = j; //y because same y value
-						
-					//point to the left, ie, point 1
-					double x1 = i - 1;
-					double y1 = j;
-					double v1 = 0;
-					if(i != 0) {
-					v1 = newImage.getRGB(i - 1, j);
-					}
-						
-					//point to the right, ie, point 2
-					double x2 = i + 1;
-					double y2 = j;
-					double v2 = newImage.getRGB(i + 1, j); //find the value of the original image where the colour will be
-						
-					v = bilinearXAxis(xf, yf, v1, x1, y1, v2, x2, y2);
-					newImage.setRGB((int) xf, (int) yf, (int) v);
+					int scaleX = (int) xRatio / 2;
+					byte[] originalColour = intToByte(newImage.getRGB(i, j));
+					byte[] point1Colour = intToByte(newImage.getRGB(i - scaleX, j));
+					byte[] point2Colour = intToByte(newImage.getRGB(i + scaleX, j));
+					
+					//red channel because java getrgb is stored in argb
+					originalColour[1] = (byte) bilinearXAxis(i, j, point1Colour[1], i - scaleX, j, point2Colour[1], i + scaleX, j);
+					
+					//green channel
+					originalColour[2] = (byte) bilinearXAxis(i, j, point1Colour[2], i - scaleX, j, point2Colour[2], i + scaleX, j);
+					
+					//blue channel
+					originalColour[3] = (byte) bilinearXAxis(i, j, point1Colour[3], i - scaleX, j, point2Colour[3], i + scaleX, j);
+					
+					
+					
+					newImage.setRGB(i, j, byteToInt(originalColour));
 					
 				}
 				/*
@@ -194,10 +198,10 @@ private class GUIEventHandler implements ActionListener {
 						
 						v = bilinearYAxis(xf, yf, v1, x1, y1, v2, x2, y2);
 						newImage.setRGB((int) xf, (int) yf, (int) v);
-					}
+					}*/
 			}
 			
-		}*/
+		}
 		
 		//find the points inbetween
 		
