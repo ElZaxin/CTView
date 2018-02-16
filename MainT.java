@@ -17,7 +17,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 
-public class Main extends JFrame {
+public class MainT extends JFrame {
 	
 	private static final long serialVersionUID = 1L;
 	JLabel image;
@@ -47,7 +47,7 @@ public class Main extends JFrame {
 	
 	  public static void main(String[] args) throws IOException {
 		  
-	       Main e = new Main();
+	       MainT e = new MainT();
 	       e.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	       e.start();
 	    }
@@ -55,7 +55,7 @@ public class Main extends JFrame {
 private class GUIEventHandler implements ActionListener {
 
     public void actionPerformed(ActionEvent event) {
-          image1 = bilinearInterpolation(image1, image.getHeight() * 2, image.getWidth() * 2);
+          image1 = bilinearInterpolation(image1, image.getHeight() * 1, image.getWidth() * 1);
           image.setIcon(new ImageIcon(image1));
     }
 	//nearest neighbour resizing
@@ -97,6 +97,18 @@ private class GUIEventHandler implements ActionListener {
 	double bilinearYAxis(double x, double y, double v1, double x1, double y1, double v2, double x2, double y2) {
 		return v1 + (v2 - v1) * ((y - y1) / (y2 - y1));
 	}
+	byte[] intToByte(int i) {
+		byte[] a = new byte[4];
+		a[0] = (byte) (i >> 24);
+		a[1] = (byte) (i >> 16);
+		a[2] = (byte) (i >> 8);
+		a[3] = (byte) i;
+		return a;
+		
+	}
+	int byteToInt(byte[] b) {
+		return b[0] << 24 | (b[1] & 0xFF) << 16 | (b[2] & 0xFF) << 8 | (b[3] & 0xFF);
+	}
 	 public BufferedImage bilinearInterpolation(BufferedImage image, float newHeight, float newWidth) {
        	BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight,BufferedImage.TYPE_3BYTE_BGR);
     	
@@ -116,12 +128,17 @@ private class GUIEventHandler implements ActionListener {
 					int c1 = image.getRGB(i, j);
 					
 					
-    				newImage.setRGB(x, y, c1);
-					
+    				
+					byte[] a = intToByte(c1);
+					int c2 = -1;
+					for(int k = 0; k < a.length; k++) {
+						
+					}
+					newImage.setRGB(x, y, byteToInt(a));
 								
 					
 			}
-    	}
+    	}/*
 		for(int j = 0; j < newImage.getHeight() - 1; j++) {
 			for(int i = 0; i < newImage.getWidth() - 1; i++) {
 				if(newImage.getRGB(i, j) == -16777216) {
@@ -177,10 +194,10 @@ private class GUIEventHandler implements ActionListener {
 						
 						v = bilinearYAxis(xf, yf, v1, x1, y1, v2, x2, y2);
 						newImage.setRGB((int) xf, (int) yf, (int) v);
-					}*/
+					}
 			}
 			
-		}
+		}*/
 		
 		//find the points inbetween
 		
