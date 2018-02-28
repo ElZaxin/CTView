@@ -6,10 +6,6 @@ import javax.swing.*;
 import java.awt.event.*;
 import javax.swing.event.*;
 
-// OK this is not best practice - maybe you'd like to create
-// a volume data class?
-// I won't give extra marks for that though.
-
 public class Main extends JFrame {
    final static int X_MAX = 256; //constants for the maximum x y and z of the data
    final static int Y_MAX = 256;
@@ -21,15 +17,16 @@ public class Main extends JFrame {
    boolean histogramEqualised = false; //used to record for the colour setting whether histogram equalisation has been
    //applied
 	
-   JButton mip_button; //set the mip
+   JButton mip_button; //set the mips
    JButton he_button; //histogram equalisation
    JLabel image_icon1; //using JLabel to display an image (check online documentation)
    JLabel image_icon2; //using JLabel to display an image (check online documentation)
    JSlider zslice_slider, yslice_slider; //sliders to step through the slices (z and y directions) (remember 113 slices in z direction 0-112)
-   JSlider xslice_slider;
+   JSlider xslice_slider, size_slider; //and to change the size
    BufferedImage image1, image2; //storing the image in memory
    short cthead[][][]; //store the 3D volume data set
    short min, max; //min/max value in the 3D volume data set
+   float size = 100; //the size, in %, 100 is normal
 	
     /*
         This function sets up the GUI and reads the data set
@@ -77,21 +74,32 @@ public class Main extends JFrame {
       Container container = getContentPane();
       container.setLayout(new FlowLayout());
         
-        // Then our image (as a label icon)
+      
+      	//setting up the change size function
+      JLabel sizeLabel = new JLabel("Change Size");
+      size_slider = new JSlider(0, 200);
+      size_slider.setMajorTickSpacing(50);
+      size_slider.setMinorTickSpacing(20);
+      size_slider.setOrientation(SwingConstants.VERTICAL);
+      size_slider.setPaintTicks(true);
+      size_slider.setPaintLabels(true);
+      container.add(sizeLabel);
+      container.add(size_slider);
+      
+          // Then our image (as a label icon)
       image_icon1=new JLabel(new ImageIcon(image1));
       container.add(image_icon1);
    	
       image_icon2 = new JLabel(new ImageIcon(image2));
       container.add(image_icon2);
-   
-        // Then the invert button
+      
+        // Then the mip and histogram equalisation function
       mip_button = new JButton("MIP");
       container.add(mip_button);
       
       he_button = new JButton("Histogram Equalisation");
       container.add(he_button);
-   	
-        
+   
         //label
       JLabel zLabel = new JLabel("Z Axis");
       container.add(zLabel);
@@ -141,6 +149,7 @@ public class Main extends JFrame {
       yslice_slider.addChangeListener(handler);
       zslice_slider.addChangeListener(handler);
       xslice_slider.addChangeListener(handler);
+      size_slider.addChangeListener(handler);
         
         // ... and display everything
       pack();
@@ -187,7 +196,13 @@ public class Main extends JFrame {
             image_icon1.setIcon(new ImageIcon(image1));
          	
          }
-      }
+         //size slider
+         if(a == size_slider) {
+            size = size_slider.getValue();
+            System.out.println(X_MAX * (size / 100));
+            
+         }
+       }
    	
    	//action handlers (e.g. for buttons)
       public void actionPerformed(ActionEvent event) {
@@ -256,7 +271,8 @@ public class Main extends JFrame {
             assignColour(data, datum, i, j, width);
          }
       }
-      return newImage;
+      float newSize = (float) Math.floor(256 * (size / 100));
+      return bilinearInterpolation(newImage, newSize, newSize);
     	
    }
     /*
@@ -273,8 +289,8 @@ public class Main extends JFrame {
             assignColour(data, datum, j, k, width);
          }
       }
-    	
-      return bilinearInterpolation(newImage, 256, 256);
+    	float newSize = (float) Math.floor(256 * (size / 100));
+      return bilinearInterpolation(newImage, newSize, newSize);
     	
    }
     /*
@@ -291,31 +307,13 @@ public class Main extends JFrame {
             assignColour(data, datum, i, k, width);
          }
       }
-      return bilinearInterpolation(newImage, 256, 256);
+      float newSize = (float) Math.floor(256 * (size / 100));
+      return bilinearInterpolation(newImage, newSize, newSize);
    }
     //*********************************************
     //Image manipulation, resizing and maximum intensity projection
     //functions
-	//resizing functions
-	//nearest neighbour resizing
-   public BufferedImage resizeNearestNeighbour(BufferedImage image, float newHeight, float newWidth) {
-      BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight,BufferedImage.TYPE_3BYTE_BGR);
-    	
-      float oldHeight = image.getHeight();
-      float oldWidth = image.getWidth();
-      for(int j = 0; j < newHeight; j++) {
-         for(int i = 0; i < newWidth; i++) {
-            float y = j * (oldHeight/newHeight);
-            float x = i * (oldWidth/newWidth);
-         		
-            newImage.setRGB(i, j, image.getRGB((int) x, (int) y));
-         		
-         }
-      }
-      return newImage;
-   }
-    
-   /**
+	/**
    * bilinear interpolation equations, on the y axis
    * V = V1 + (V2 - V1) * ((y - y1) / (y2 - y1))
    *
@@ -369,7 +367,7 @@ public class Main extends JFrame {
    }
    public BufferedImage bilinearInterpolation(BufferedImage image, float newHeight, float newWidth) {
       BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight,BufferedImage.TYPE_3BYTE_BGR);
-      
+    
       //set the origin points
       float oldHeight = image.getHeight();
       float oldWidth = image.getWidth();
@@ -474,21 +472,21 @@ public class Main extends JFrame {
          case "TV": 
             newImage = new BufferedImage(256, 256, BufferedImage.TYPE_3BYTE_BGR);
          //Get image dimensions, and declare loop variables
-         
+           width = newImage.getWidth();
          //Obtain pointer to data for fast processing
             byte[] data = GetImageData(newImage);
          
             for (i = 0; i < X_MAX; i++) {
-               for (j=0; j < Y_MAX; j++) {
+               for (j = 0; j < Y_MAX; j++) {
                   maximum = 0;
                   for(k=0; k < Z_MAX; k++) {//loop through every z value, and find the highest intensitity
-                     short temp = cthead[k][i][j];
+                     short temp = cthead[k][j][i];
                      if(temp > maximum) {
                         maximum = temp;
                      }
                   }
                   datum = maximum;
-                  assignColour(data, datum, i, j, width);
+                  assignColour(data, datum, j, i, width);
                } // column loop
             } // row loop
             break;
@@ -546,8 +544,8 @@ public class Main extends JFrame {
    	
    	
         
-   
-      return resizeNearestNeighbour(newImage, 256, 256);
+      float newSize = (float) Math.floor(256 * (size / 100));
+      return bilinearInterpolation(newImage, newSize, newSize);
    }	
 
 	/**
