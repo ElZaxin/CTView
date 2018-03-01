@@ -1,3 +1,5 @@
+package asdf;
+
 import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
@@ -365,9 +367,14 @@ public class Main extends JFrame {
         //btyes to signed bytes, because the last one is going to be signed
       return b[0] << 24 | (b[1] & 0xFF) << 16 | (b[2] & 0xFF) << 8 | (b[3] & 0xFF);
    }
+   int getIndex(int x, int y, int c, int width) {
+	   return c + 3 * x + 3 * y * width;
+   
+   }
    public BufferedImage bilinearInterpolation(BufferedImage image, float newHeight, float newWidth) {
       BufferedImage newImage = new BufferedImage((int) newWidth, (int) newHeight,BufferedImage.TYPE_3BYTE_BGR);
-    
+      byte[] oldData = GetImageData(image);
+      byte[] newData = GetImageData(newImage);
       //set the origin points
       float oldHeight = image.getHeight();
       float oldWidth = image.getWidth();
@@ -415,37 +422,46 @@ public class Main extends JFrame {
               
             int y2 = (int) ((y * yRatio) + yRatio);
                
-               
-            byte[] point1Colour = intToByte(image.getRGB(x, y));
-            byte[] point2Colour = intToByte(image.getRGB(x + 1, y));
-            byte[] point3Colour = intToByte(image.getRGB(x, y + 1));
-            byte[] point4Colour = intToByte(image.getRGB(x + 1, y + 1));
+            //find the byte arrays of the original points on the o image, the cube found from the origin point x and y
+            byte[] point1Colour = {oldData[getIndex(x, y, 0, image.getWidth())], oldData[getIndex(x, y, 1, image.getWidth())], 
+            		oldData[getIndex(x, y, 2, image.getWidth())]};
+            
+            byte[] point2Colour = {oldData[getIndex(x + 1, y, 0, image.getWidth())], oldData[getIndex(x + 1, y, 1, image.getWidth())], 
+            		oldData[getIndex(x + 1, y, 2, image.getWidth())]};
+            
+            byte[] point3Colour = {oldData[getIndex(x, y + 1, 0, image.getWidth())], oldData[getIndex(x, y + 1, 1, image.getWidth())], 
+            		oldData[getIndex(x, y + 1, 2, image.getWidth())]};
+            
+            byte[] point4Colour = {oldData[getIndex(x + 1, y + 1, 0, image.getWidth())], oldData[getIndex(x + 1, y + 1, 1, image.getWidth())], 
+            		oldData[getIndex(x + 1, y + 1, 2, image.getWidth())]};
+            
                
                //for the square of the new image
               
                
-            byte[] newColour = new byte[4];
+            byte[] newColour = new byte[3];
                      //colours given after being converted to unsigned bytes, 0 - 256 for the interpolation equations because of how
                      //the interpolation equations are applied
                      //apply x interpolation p -> p2
-            byte r1 = bilinearXAxis(i, y, point1Colour[1] & 0xFF, x, y, point2Colour[1] & 0xFF, x2, y);
-            byte g1 = bilinearXAxis(i, y, point1Colour[2] & 0xFF, x, y,  point2Colour[2] & 0xFF, x2, y);
-            byte b1 = bilinearXAxis(i, y, point1Colour[3] & 0xFF, x, y,  point2Colour[3] & 0xFF, x2, y);                        
+            byte r1 = bilinearXAxis(i, y, point1Colour[0] & 0xFF, x, y, point2Colour[0] & 0xFF, x2, y);
+            byte g1 = bilinearXAxis(i, y, point1Colour[1] & 0xFF, x, y,  point2Colour[1] & 0xFF, x2, y);
+            byte b1 = bilinearXAxis(i, y, point1Colour[2] & 0xFF, x, y,  point2Colour[2] & 0xFF, x2, y);                        
                      
                      //then x interpolation p3 -> p4
-            byte r2 = bilinearXAxis(i, y2, point3Colour[1] & 0xFF, x, y2, point4Colour[1] & 0xFF, x2, y2);
-            byte g2 = bilinearXAxis(i, y2, point3Colour[2] & 0xFF, x, y2,  point4Colour[2] & 0xFF, x2, y2);
-            byte b2 = bilinearXAxis(i, y2, point3Colour[3] & 0xFF, x, y2,  point4Colour[3] & 0xFF, x2, y2);                        
+            byte r2 = bilinearXAxis(i, y2, point3Colour[0] & 0xFF, x, y2, point4Colour[0] & 0xFF, x2, y2);
+            byte g2 = bilinearXAxis(i, y2, point3Colour[1] & 0xFF, x, y2,  point4Colour[1] & 0xFF, x2, y2);
+            byte b2 = bilinearXAxis(i, y2, point3Colour[2] & 0xFF, x, y2,  point4Colour[2] & 0xFF, x2, y2);                        
                      
                      
                      //final setting of the colours and applying point r1 -> r2 y axis interpolation
-            newColour[1] = bilinearYAxis(i, j, r1, i, y, r2, i, y2);
-            newColour[2] = bilinearYAxis(i, j, g1, i, y, g2, i, y2);
-            newColour[3] = bilinearYAxis(i, j, b1, i, y, b2, i, y2);
+            newColour[0] = bilinearYAxis(i, j, r1, i, y, r2, i, y2);
+            newColour[1] = bilinearYAxis(i, j, g1, i, y, g2, i, y2);
+            newColour[2] = bilinearYAxis(i, j, b1, i, y, b2, i, y2);
                      
                      //convert the new colour to an integer
-            newImage.setRGB(i, j, byteToInt(newColour));
-               
+            newData[getIndex(i, j, 0, newImage.getWidth())] = newColour[0];
+            newData[getIndex(i, j, 1, newImage.getWidth())] = newColour[1];
+            newData[getIndex(i, j, 2, newImage.getWidth())] = newColour[2];
          }
             
            
