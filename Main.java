@@ -1,5 +1,3 @@
-package asdf;
-
 import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
@@ -201,9 +199,7 @@ public class Main extends JFrame {
          //size slider
          if(a == size_slider) {
             size = size_slider.getValue();
-            System.out.println(X_MAX * (size / 100));
-            
-         }
+           }
        }
    	
    	//action handlers (e.g. for buttons)
@@ -345,28 +341,7 @@ public class Main extends JFrame {
             
       return ret;
    }
-   byte[] intToByte(int i) {
-        //converts i to bytes, where an integer is 32 bits, by shifting them all to the left, which 
-        //leaves only one byte for each calculation.
-      byte[] a = new byte[4];
-          
-         
-      a[0] = (byte) (i >> 24);
-      a[1] = (byte) (i >> 16);
-      a[2] = (byte) (i >> 8);
-      a[3] = (byte) i;
-         
-        
-      return a;
-      
-   }
-   int byteToInt(byte[] b) {
-        //convert the byte array to an integer through the use of bitwise shifts, and ors them all together
-        //which essentially, if the other patterns are moved to the left, as in added more 0s, it will be a 0 ORed with
-        //the other binary values, which will set them to the values that were 0s, 0xFF conversion to convert the unsigned 
-        //btyes to signed bytes, because the last one is going to be signed
-      return b[0] << 24 | (b[1] & 0xFF) << 16 | (b[2] & 0xFF) << 8 | (b[3] & 0xFF);
-   }
+
    int getIndex(int x, int y, int c, int width) {
 	   return c + 3 * x + 3 * y * width;
    
